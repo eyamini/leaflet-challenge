@@ -1,25 +1,23 @@
-// Store the given API endpoint inside queryUrl
-var earthquakeURL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-var tectonicPlatesURL = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
+// Set API data sources
+var EarthQuakes = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+var Tectonic = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
 
-// Get request for data
-d3.json(earthquakeURL, function(data) {
+d3.json(EarthQuakes, function(data) {
     createFeatures(data.features);
 });
-// Define function to run "onEach" feature 
+//Set functions on Each 
 function createFeatures(earthquakeData) {
     var earthquakes = L.geoJSON(earthquakeData, {
         onEachFeature: function(feature, layer) {
             layer.bindPopup("<h3>Magnitude: " + feature.properties.mag +"</h3><h3>Location: "+ feature.properties.place +
               "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
           },
-
           pointToLayer: function (feature, latlng) {
             return new L.circle(latlng,
               {radius: getRadius(feature.properties.mag),
               fillColor: getColor(feature.properties.mag),
               fillOpacity: .5,
-              color: "black",
+              color: "grey",
               stroke: true,
               weight: .8
           })
@@ -28,46 +26,39 @@ function createFeatures(earthquakeData) {
 
     createMap(earthquakes);
 }
-
 function createMap(earthquakes) {
 
-    // Define the map layers
-    var airmap = L.tileLayer("https://api.mapbox.com/styles/v1/mfatih72/ck30s2f5b19ws1cpmmw6zfumm/tiles/256/{z}/{x}/{y}?" + 
+    //Set variable layers
+    var CityMap = L.tileLayer("https://api.mapbox.com/styles/v1/mfatih72/ck30s2f5b19ws1cpmmw6zfumm/tiles/256/{z}/{x}/{y}?" + 
     "access_token=pk.eyJ1IjoibWZhdGloNzIiLCJhIjoiY2sycnMyaDVzMGJxbzNtbng0anYybnF0MSJ9.aIN8AYdT8vHnsKloyC-DDA");
-  
-       
+      
     var satellite = L.tileLayer("https://api.mapbox.com/styles/v1/mfatih72/ck30r72r818te1cruud5wk075/tiles/256/{z}/{x}/{y}?" + 
     "access_token=pk.eyJ1IjoibWZhdGloNzIiLCJhIjoiY2sycnMyaDVzMGJxbzNtbng0anYybnF0MSJ9.aIN8AYdT8vHnsKloyC-DDA");
-
-        
-    var lightMap = L.tileLayer("https://api.mapbox.com/styles/v1/mfatih72/ck30rkku519fu1drmiimycohl/tiles/256/{z}/{x}/{y}?" + 
+  
+    var StateMap = L.tileLayer("https://api.mapbox.com/styles/v1/mfatih72/ck30rkku519fu1drmiimycohl/tiles/256/{z}/{x}/{y}?" + 
     "access_token=pk.eyJ1IjoibWZhdGloNzIiLCJhIjoiY2sycnMyaDVzMGJxbzNtbng0anYybnF0MSJ9.aIN8AYdT8vHnsKloyC-DDA");
     
-      // Define base maps
+    //Label Overlay Maps
     var baseMaps = {
-        "LightMap": lightMap,
-        "AirMap": airmap,
+        "State Map": StateMap,
+        "City Map": CityMap,
         "Satellite": satellite
     };
-
-    // Create tectonic layer
+    //Tectonic Layer
     var tectonicPlates = new L.LayerGroup();
-
-    // Create overlay object to hold overlay layer
+    //Earthquake and Tectonic Maps
     var overlayMaps = {
         "Earthquakes": earthquakes,
         "Tectonic Plates": tectonicPlates
     };
-
-    // Create our map
+    //Compile map
     var myMap = L.map("map", {
         center: [40.7, -94.5],
         zoom: 5,
-        layers: [lightMap, earthquakes, tectonicPlates]
+        layers: [StateMap, earthquakes, tectonicPlates]
     });
 
-    // Add tectonic plates data
-    d3.json(tectonicPlatesURL, function(tectonicData) {
+    d3.json(Tectonic, function(tectonicData) {
         L.geoJson(tectonicData, {
             color: "blue",
             weight: 2
@@ -75,22 +66,20 @@ function createMap(earthquakes) {
         .addTo(tectonicPlates);
     });
 
-    //Add layer control to map
+    //Layer Menu
     L.control.layers(baseMaps, overlayMaps, {
         collapsed: false
     }).addTo(myMap);
 
-    // Create legend
+    //Legend
     var legend = L.control({
         position: "bottomleft"
     });
-
     legend.onAdd = function(myMap) {
         var div = L.DomUtil.create("div", "info legend"),
         grades = [0, 1, 2, 3, 4, 5],
         labels = [];
 
-    // Create legend
     for (var i = 0; i < grades.length; i++) {
         div.innerHTML +=
             '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
@@ -101,24 +90,24 @@ function createMap(earthquakes) {
     legend.addTo(myMap);
 }
 
-// Create color function
+//Set color variations
 function getColor(magnitude) {
     if (magnitude > 5) {
-        return 'red'
-    } else if (magnitude > 4) {
-        return 'orange'
-    } else if (magnitude > 3) {
-        return 'yellow'
-    } else if (magnitude > 2) {
-        return 'lightgreen'
-    } else if (magnitude > 1) {
         return 'green'
+    } else if (magnitude > 4) {
+        return 'lightgreen'
+    } else if (magnitude > 3) {
+        return 'blue'
+    } else if (magnitude > 2) {
+        return 'red'
+    } else if (magnitude > 1) {
+        return 'darkblue'
     } else {
-        return 'magenta'
+        return 'darkgreen'
     }
 };
 
-//Create radius function
+//Set Radius
 function getRadius(magnitude) {
     return magnitude * 20000;
 };
